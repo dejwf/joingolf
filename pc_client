@@ -1,0 +1,1474 @@
+/*	### pc_configuration ### */
+
+function configScreen(){
+	 				return{ view: 'layout', type: 'wide',
+			rows: [
+				{ view: 'form', scroll: true, id: 'userform',
+					elements: [		//inputWidth: '100'
+						{ view: 'text',labelWidth:110, name: '', label: ui.label.userid, value: cstate.golfer.player.userid, labelPosition: 'left', labelAlign: 'left', id: 'userid'},
+						{ view: 'text',labelWidth:110, name: '', label: ui.label.firstname, value: cstate.golfer.player.firstname, labelPosition: 'left', labelAlign: 'left', id: 'firstname'},
+						{ view: 'text',labelWidth:110, name: '', label: ui.label.lastname, value: cstate.golfer.player.lastname, labelPosition: 'left', labelAlign: 'left', id: 'lastname'},
+						{ view: 'text',labelWidth:110, name: '', label: ui.label.hcp, value: cstate.golfer.player.hcp, labelPosition: 'left', labelAlign: 'left', id: 'hcp'},
+						{ view: 'text',labelWidth:110, name: '', label: ui.label.email, value: cstate.golfer.player.email, labelPosition: 'left', labelAlign: 'left', id: 'email'},
+						{ view: 'text',labelWidth:110, name: '', label: ui.label.password, value: cstate.golfer.player.pwd, labelPosition: 'left', labelAlign: 'left',type:"password", id: 'pwd'},
+						{ view: 'button', label: ui.label.button.safe, type:'form', popup: '', click: 'safe', css: '', id: 'safetoserver'}
+					], 
+				}
+			], id: 'layout_configScreen'
+		}  
+} 
+
+function safe(a){
+	var update=$$("userform").getValues()
+	delete update.safetoserver
+	update.appname="gdist"
+	update.id=cstate.golfer.player.id
+	callApp24("updatePlayer",update,"commitSafe")
+	
+}
+
+function commitSafe(data){		
+	cstate.golfer.player=data
+	$$("mainheader").data.label=displayName()
+	$$("mainheader").refresh ()
+}
+
+function courseScreen(){
+	
+			cstate.create={}
+			cstate.create.course={}
+			cstate.create.course.holeinfos=[]
+			cstate.selectAsAdmin={}
+			cstate.selectAsAdmin.course={}
+			var param={}
+			param.appname="gdist"
+			/*
+			var allcourses=callApp24Sync("getGCList",param)
+			allcourses.forEach(function (course){
+				course
+			})
+			*/
+			//Now we have to make courses to fill cstate.allcourses in same fashion like it was formely. (currently method selectAllGolfCourses works at the test (jptest) server )
+			//The former content of cstate.allcourses was dictionary, where key was ID of course 
+			/*(e.g. key:832)
+			 * 832:{
+			 * 			adress.email	= "info@amp-golf.de"
+			 * 			adress.fax		="0451-7099879"
+			 * 			adress.name		="amp-Golfclub Lübecker Bucht e.V."
+			 * 			adress.ort		="Lübeck"
+			 * 			adress.plz		=23569
+			 * 			adress.shortname="amp-Golfclub Lübecker Bucht"
+			 * 			adress.strasse_nr="Masselbett 14"
+			 * 			adress.telefon	= "0451-7099870"
+			 * 			adress.website	="www.amp-golf.de"
+			 * 
+			 * 			holeinfos.id=1
+			 * 			holeinfos.nr=1
+			 * 			
+			 * 			id= 831
+			 *			name= "amp-Golfclub Lübecker Bucht"
+			 *			value= "amp-Golfclub Lübecker Bucht"
+			 * 		}
+			 * NOTE: value is DHX displaying in fields (list, etc...)	
+			 * */
+			cstate.allcourses=callApp24Sync("selectAllGolfCourses").courses
+			var clubslist=dictValues(cstate.allcourses)
+tt=1
+			return {
+					view:'layout',
+					type: 'line',
+					rows:[
+					      {	view:"button",
+					      	type:'round',
+					      	label:ui.label.header.course.create,
+					      	gravity: 1, 
+					      	click:'createCourse'
+					     },{	
+					    	type:'clean',
+					    	cols:[
+									{
+										view: 'combo',
+										name: 'comboSelectedItem',
+										labelWidth:0,
+										value:"",
+										id: 'coursecombo',
+										data:clubslist,
+										yCount:'10',
+										gravity: 2,
+									},{
+										view:'label',
+										label:'',
+										gravity:1
+									},{
+										view:'button',
+										type:'form',
+										label:ui.label.button.edit, 
+										click:'editCourse',
+										gravity: 2
+									}
+								]
+					     },{view:'layout',
+					    	 type:'clean',
+					    	 cols:[
+					    	       {	view: 'label',
+										value:"",
+										id: 'filling_label_1',
+										gravity: 2,
+									},{
+										view:'label',
+										label:'',
+										gravity:1,
+										id: 'filling_label_2',
+									},{
+										view:'button',
+										type:'form',
+										label:ui.label.button.edit, 
+										click:'TournamentCRUD',
+										gravity: 2
+									}
+					    	       ]}
+					    ]
+				}
+
+}
+
+function TournamentCRUD(){
+	var courseid=$$("coursecombo").getValue()
+	
+	
+	alert("TournamentCRUD")
+}
+
+function editCourse (){
+	cstate.courseForm={}
+	var id=$$("coursecombo").getValue()
+	cstate.currCourse=cstate.allcourses[id]
+	
+	tt=1
+	cstate.courseForm = new GenWindow(editCourseWindow(cstate.currCourse),{top: 10, left:10, width: 1220, height:'100%',})
+	cstate.courseForm.show()
+	$$("coursecombo").refresh()
+}
+
+function createCourse (){
+	cstate.courseForm={}
+	
+				cstate.create.course={}
+				cstate.create.course.name=""
+				cstate.create.course.adress=""
+				cstate.create.course.holeinfos=[]
+		
+			for(var hnr=1;hnr<=18;hnr++)
+			{
+				if (!cstate.create.course.holeinfos[hnr]) cstate.create.course.holeinfos[hnr]={}
+				cstate.create.course.holeinfos[hnr].par=""
+				cstate.create.course.holeinfos[hnr].hcp=""
+				cstate.create.course.holeinfos[hnr].men=""
+				cstate.create.course.holeinfos[hnr].women=""
+				cstate.create.course.holeinfos[hnr].geo={}				
+				cstate.create.course.holeinfos[hnr].geo.green={}
+				cstate.create.course.holeinfos[hnr].geo.green.lng=""
+				cstate.create.course.holeinfos[hnr].geo.green.lat=""
+				cstate.create.course.holeinfos[hnr].geo.tee={}
+				cstate.create.course.holeinfos[hnr].geo.tee.lng=""
+				cstate.create.course.holeinfos[hnr].geo.tee.lat=""
+				
+			}
+cstate.currCourse=cstate.create.course
+	 cstate.courseForm = new GenWindow(editCourseWindow(cstate.create.course),{top: 10, left:10, width: 1220, height:'100%',})
+	cstate.courseForm.show()
+}
+
+/*###	pc_preselect ###*/
+
+cstate={}
+cstate.gele={}
+cstate.currobj={}
+cstate.currCourse={}
+cstate.select ={}
+cstate.select.course={}
+cstate.flag={}
+cstate.playerslist=[{id:"0",value:"My self"},{id:"1",value:"Angelika"},{id:"2",value:"Emil"},{id:"3",value:"Oskar"},{id:"4",value:"Pit"}]
+cstate.tournaments=[{id:"1",value:"Oki 31.12.2009"},{id:"2",value:"Loki 12.6.2008"},{id:"3",value:"Tiki 6.3.2007"},{id:"4",value:"Vlaky 8.8.2006"}]
+cstate.flightslist=[{id:"1",value:""},{id:"2",value:""},{id:"3",value:""}]
+sample2=[{id:"1",value:"Tournament"},{id:"2",value:"Flight"},{id:"3",value:"Single"}]
+
+	//#### getting proportions of window ####
+td255=Math.round(Math.min(((window.innerWidth)/100)*22))//255
+td40=Math.round(Math.min((((window.innerWidth)/100)*60)/18))
+td55=Math.round(Math.min((((window.innerWidth)/100)*15)/3))
+tr22=Math.round(Math.min(((window.innerWidth)/100)*7)/3) 
+tr25=Math.round(Math.min(((window.innerWidth)/100)*6))
+
+test1=Math.round((tr22)/3)
+tr99percernt22=tr22+"px"
+trtest=(tr22-test1)+"px"
+tr33percernt22=test1+"px"
+tr4header=test1*4
+
+//cstate.flightslist=[]
+//cstate.joinedstate=false
+//player={}
+//player.id=14
+//player.appname="gdist"
+//cstate.flags='<img src="data/de.png" onClick="languageGER">'+'<br>'+'<img src="data/cz.png" onClick="languageCZE">'
+
+function passTheImputs(a,b){
+	cstate.lev={}
+	cstate.lev.htmlsite="GDistManager.html"
+	cstate.lev.userid=document.getElementById('username').value
+	cstate.lev.pwd=document.getElementById('password').value
+	
+	callApp24("GDistLogin",cstate.lev,"commitLogEvent")	
+}
+
+function hitEnter(input,button){
+	if(button.keyCode!==13) return
+	passTheImputs('username','password')
+}
+
+function registration(){
+	document.getElementById('middle').innerHTML=document.getElementById('newaccount').innerHTML
+	document.getElementById("newusername").focus();
+}
+
+function createNewUser(a,b,c,d,e,f,g){	//name,pwd1 and pwd2 are compulsary fields 
+	var username=document.getElementById(a).value
+	var password1=document.getElementById(b).value
+	var password2=document.getElementById(c).value
+	var email=document.getElementById(d).value
+	var handicap=document.getElementById(e).value
+	var firstname=document.getElementById(f).value
+	var lastname=document.getElementById(g).value
+	
+	if(!username || username=="name" || !password1) return alert("not filled")
+	if(username && password1){
+		if(password1!==password2) return alert("passwords do not match!")
+		if(email=="@")email=""
+			
+		alert("alles in ordnung! username:" +username+"; password:"+password1+"; email:"+email+"; handicap:"+handicap+"; fistname:"+fistname+"; lastname:"+lastname+";")
+		
+		iparam.hcp=handicap
+		iparam.pwd=password
+		iparam.htmlsite="GDistManager.html"
+		iparam.appname="gdist"
+		iparam.firstname=firstname
+		iparam.lastname=lastname
+		iparam.userid=username
+		iparam.hcp=handicap
+		iparam.pwd=password1
+		iparam.email=email
+		callApp24("GDistNewAccount",cstate.nlev,"commitLogEvent");		
+	}
+}
+
+
+
+// #### LOG IN BEGIN ####
+function authentication() {
+	
+	document.getElementById("screen2").innerHTML=document.getElementById("screen").innerHTML
+	
+	return		//dead content of the function
+	
+	cstate.authLog = new FormWindow ("mlog", {
+                headerlabel: ui.label.header.login,
+                left: 10,
+                height: 172,
+				width:500,
+				okbutton:false
+            }) 
+		cstate.authLog.setLabelWidth(100)
+		cstate.authLog.addText("User ID",{labelAlign:'left'})
+		cstate.authLog.addText("Password",{labelAlign:'left',type:'password'})
+		cstate.authLog.addRow({
+                        view: 'toolbar',
+                        type: 'TransparentBar',
+                        elements: [{
+                            view: 'button',
+							type:'form',
+                            label: ui.label.button.login,
+                            click: "mlog",
+                        },{
+                            view: 'button',
+							type:'round',
+                            label: ui.label.button.newaccount,
+                            click: "newAccount"
+                        }, 
+					 ],
+                    })
+		cstate.authLog.show ()
+		$$("User ID").focus()
+}
+/*
+function newAccount(){//is dead function?
+	return
+cstate.authLog.hide ()
+	cstate.authNew = new FormWindow ("newlog", {
+                headerlabel: ui.label.header.newaccount,
+                left: 10,
+                height: 340,
+				width:500,
+				okbutton:false
+            }) 
+		cstate.authNew.setLabelWidth(100)
+		cstate.authNew.addText("First Name",{labelAlign:'left'})
+		cstate.authNew.addText("Last Name",{labelAlign:'left'})
+		cstate.authNew.addText("User ID",{labelAlign:'left'})
+		cstate.authNew.addText("Handicap",{labelAlign:'left'})
+		cstate.authNew.addText("Password",{labelAlign:'left',type:'password'})
+		cstate.authNew.addText("E-mail",{labelAlign:'left'})
+		cstate.authNew.addRow({
+                        view: 'toolbar',
+                        type: 'TransparentBar',
+                        elements: [
+                        {
+                            view: 'button',
+							type:'form',
+                            label: ui.label.button.create,
+                            click: "newlog"
+                        },
+                        {
+                            view: 'button',
+							type:'round',
+                            label: ui.label.button.back,
+                          	click: "backToBegining"
+                        }
+ 
+					 ],
+                    })
+		cstate.authNew.show ()
+}
+
+function backToBegining(){//is dead function?
+	return
+	cstate.authNew.hide ()
+	authorization()
+}
+
+function newlog(data){	//is dead function?
+	return
+	data=cstate.authNew.getValues()
+	cstate.authNew.hide ()
+	cstate.nlev={}
+	cstate.nlev.htmlsite="GDistManager.html"
+	cstate.nlev.appname="gdist"
+	cstate.nlev.firstname=data["First Name"]
+	cstate.nlev.lastname=data["Last Name"]
+	cstate.nlev.userid=data["User ID"]
+	cstate.nlev.hcp=data.Handicap
+	cstate.nlev.pwd=data.Password
+	cstate.nlev.email=data["E-mail"]
+	callApp24("GDistNewAccount",cstate.nlev,"commitLogEvent");
+}
+*/
+
+function mlog(name,pwd){
+	iparam={}
+	iparam.htmlsite="GDistManager.html"
+	iparam.appname="gdist"
+	iparam.userid=document.getElementById(name).innerHTML
+	iparam.pwd=document.getElementById(pwd).innerHTML
+	callApp24("GDistLogin",cstate.lev,"commitLogEvent");
+	
+	/*
+	 return			//dead content of the function
+	data=cstate.authLog.getValues()
+	cstate.authLog.hide ()
+	cstate.lev={}
+	cstate.lev.htmlsite="GDistManager.html"
+	cstate.lev.appname="gdist"
+	cstate.lev.userid=data["User ID"]
+	cstate.lev.pwd=data.Password
+	callApp24("GDistLogin",cstate.lev,"commitLogEvent");
+	*/
+}
+
+
+function commitLogEvent (x){
+cstate.golfer={}
+	if (x.error){
+					if (x.reason == "useridtooshort"){
+								alert(x.reason)	
+								newAccount()
+						}
+					else{
+							if (x.reason == "userunknown"){
+									document.getElementById('middle').innerHTML=document.getElementById('wronglogin').innerHTML
+									document.getElementById("wrongusername").focus();
+								}
+							if (x.reason == "wrongpwd"){
+									document.getElementById('middle').innerHTML=document.getElementById('wronglogin').innerHTML
+									document.getElementById("wrongusername").focus();
+								}
+						}
+	
+		}
+	else{
+		cstate.golfer=x
+		var player={} 
+		player.id=cstate.golfer.player.id	
+		var ll=window.location
+		ll.href=x.urlappend 
+		}
+}
+//#### LOG IN END ####
+
+function handleJGMessage(message){
+	tt=1
+}
+
+
+function displayName(){	//is this dead function?
+	return
+		var fullname='<span id="headername">'+cstate.golfer.player.firstname+' '+cstate.golfer.player.lastname+'<img src="data/wrench.png" style="vertical-align:top;horizontal-align:right;" >'+'</span>'
+		var userid='<span id="headername">'+cstate.golfer.player.userid+'<img src="data/key-solid.png" style="vertical-align:top;horizontal-align:right;" >'+'</span>'
+		if (cstate.golfer.player.firstname && cstate.golfer.player.lastname) {return fullname}
+		else{return userid}	
+   }
+
+function initGMain(a,b,c){
+	
+	var manager = new MultiView({hastabs:false, head:{height:56}} )
+		manager.addHeader({
+			                width:200,
+			                view: "label",
+			                label:displayName(),
+			                align: 'left',
+							id:"mainheader",
+							gravity:10,
+							css:"allLayout",
+			            	},{
+				    			width:200,
+				    			view:'label',
+				    			align:"center",
+				    			id:'flagsheader',
+				    			label:cstate.flags,
+				    			gravity:10,
+			            	})   
+		manager.addView(ui.segmented.leaderboard,c)		 
+		manager.addView(ui.segmented.mydata,a)
+		manager.addView(ui.segmented.golfpalce,b)
+		manager.show()
+}	
+
+function displayWelcome(){
+	document.getElementById("screen2").innerHTML=document.getElementById("screen").innerHTML
+}
+
+function displayLeaderboard(){	//swithes the start screen with the actual leaderboard
+	document.getElementById("screen").innerHTML=document.getElementById("screen2").innerHTML
+}
+
+function clickForGameRepaly(a){
+	ip={}
+	//ip.name=a
+	//downloadFile("getKML",ip)
+}
+
+function onGridCellClick(gridid,itemid,col){
+	mySplitResult = col.split("hole")
+	//### if the name starts with "hole", an earth-replay will be executed
+	if (mySplitResult[1]){
+		//### second part of the split() is the holenr
+		var ip={}
+		ip.HOLENR=parseInt(mySplitResult[1])
+		//### get the grid-element to get the "hidden" gameid
+		var gele = $$("scoreboardgrid").item(itemid)
+		ip.gameid=gele.gameid
+		resp=callApp24Sync("getKML",ip)
+		if (resp.error) {
+			alert(resp.error)
+			return
+		} 
+		cstate.kml=resp.kml 
+		cstate.bounds=resp.bounds 
+		initGEPlugin()
+		var plname=cstate.playerdict[gele.id].value
+		//document.getElementById('header_hole_info').innerHTML=gele.player+" @ Bahn "+ip.HOLENR+" Score: "+gele["holeV"+ip.HOLENR]
+		document.getElementById('header_hole_info').innerHTML=plname+" @ Bahn "+ip.HOLENR+" Score: "+gele["holeV"+ip.HOLENR]
+		document.getElementById('header_leaderboard').innerHTML="Replay"
+		}
+}
+
+function clickForHoleReplay(a){
+	ip={}
+	ip.gameid=cstate.currgameid
+	ip.holenr=a
+}
+
+
+
+function proposal(){
+	var clubsToList=dictValues(cstate.allcourses)
+	return {
+		view: 'layout', 
+		type: 'clean', 
+		id: 'layout',
+		rows: [ {view: 'layout', 
+				type: 'clean', 
+				id:'layout_fff',
+				cols: [ //{ view: 'combo', name: '', label: 'test', value: 'Two', id: 'control_combo_4', datatype: 'json', url: './data/sample_select.json'},
+				        {view:'richselect',
+					    labelWidth:65,
+					    label:'Scope ', hidden:false,
+					    gravity:200, yCount:2,
+					    id:'labelMyGame',css:'grey_bar_background',
+					    align:'center',
+					    options:[{value:1,label:"name"},{value:2,label:"course"}],
+					    click:"nameOrCourse",
+					    },
+					    {view:'label',gravity:400,hidden:false,css:'grey_bar_background',label:'',id:"hide_combo_clubselection"},//element to fill 
+																																	//the empty space
+						{view: 'combo', 																//select the course combo 
+						click: "getComboCourse", hidden:true,
+						label: 'Course', value: '',labelWidth:65, 
+						id: 'combo_clubselection',css:'grey_bar_background',
+						datatype: 'json', data:clubsToList, select: 1, 
+						gravity:400, scroll: 1
+						},
+						{view: 'combo', 																//select the player combo 
+						click: "getComboName", hidden:true,css:'grey_bar_background',
+						label: "Player",labelWidth:65, yCount:10, 
+						value: "",id: 'combo_nameselection',  
+						datatype: 'json', data:cstate.flightslist,  
+						gravity:400, scroll: 1,select: 1,
+						},
+						{view:'label',css:'grey_bar_background',gravity:500,hidden:false,label:'',id:"hide_combo_type"},//element to fill 
+									//the empty space
+						{view: 'richselect',  																//select flight/turnament/singleplay list
+						label: 'Type',yCount:3,
+						labelWidth:65, value: '0',labelWidth:55,css:'grey_bar_background',
+						id: 'combo_type', datatype: 'json', data:sample2, 
+						gravity:500,select: 1,
+						click:"getComboType",
+						hidden:true,
+						},
+						{view: 'combo',  	css:'grey_bar_background',															//select game list
+						label: 'Events', value: '0',labelWidth:65, 		//games
+						id: 'combo_game', datatype: 'json', data:sample2, 
+						gravity:500,select: 1,
+						click:"getComboGame",
+						hidden:true,
+						},
+						{view:'label',css:'grey_bar_background',gravity:500,hidden:false,label:'',id:"hide_combo_event"},//element to fill 
+									//the empty space
+						{view: 'richselect',  																//select the event list
+						label: 'Event',labelWidth:65, css:'grey_bar_background',
+						click:"getComboEvent",value: cstate.flightslist[0].id,labelWidth:55, 
+						id: 'combo_event',datatype: 'json', data:cstate.flightslist, 
+						gravity:500,select: cstate.flightslist[0].id,hidden:true,
+						},
+						{view:"datepicker", id: "calendar", label: 'date',
+						labelWidth:40, labelAlign: "left",hidden:true,
+						css:'grey_bar_background',gravity:200
+						}
+					 ]
+				},	
+				{view: 'layout', type: 'wide', id: 'llayoutWithmainGame', hidden:false,rows: [scoreboard()]},
+			]
+		};
+}
+
+function nameOrCourse(a){
+	if(a == "labelMyGame")return
+	if(a == 1) scopeName()
+	if(a == 2) scopeCourse()
+	$$("scoreboardgrid").clearAll()	
+}
+
+//#### scope for GOLFER NAME ####
+
+function scopeName(){
+	
+	//$$('labelMyGame').// would be nice to make a label (string)that would replace the original label dynamically (so instead of "Scope" - "Name"||"Course")
+	$$("combo_nameselection").define("data",cstate.allplayers.members)//.clear()
+	$$("combo_clubselection").hide()		//hide A H 
+	$$("hide_combo_clubselection").hide()	//hide A 2 
+	$$("combo_nameselection").show()		//show A 1 
+	
+	$$("combo_game").hide()				//hide B 1
+	$$("combo_type").hide()				//hide B 2
+	$$("hide_combo_type").show()	 	//show B H 
+		
+	$$("calendar").hide()				//hide C 1
+	$$("combo_event").hide()			//hide C 2
+	$$("hide_combo_event").show() 		//show C H
+		
+}
+
+function getComboName(id){
+	if (id =='combo_nameselection') return
+	
+	//### call server for this player's games and display the games in another drop down list
+	//### it'not just the games, it is about the events the player took part, eg. flights, tournaments
+	var iparam={}
+	iparam.scope="player"
+	iparam.id=id		//player's id
+	var resp=callApp24Sync("getGames",iparam)
+	cstate.games=resp	//this is needed later @ getComboName()
+	//### We have to show a combo first so that the "..._list" id exists and we can dynamically
+	//### update the data, ie. the elements of the combo-box
+	$$("combo_clubselection").hide()		//hide A H 
+	$$("hide_combo_clubselection").hide()	//hide A 2 
+	$$("combo_nameselection").show()		//show A 1 
+
+	$$("hide_combo_type").hide()	 	//hide B H
+	$$("combo_type").hide()				//hide B 2
+	$$("combo_game").show()				//show B 1
+		$$("combo_game_list").clearAll()
+		$$("combo_game_list").parse(resp.events)
+	
+	$$("hide_combo_event").hide() 		//hide C H	
+	$$("combo_event").hide()			//hide C 2
+	$$("calendar").show()				//show C 1
+}
+
+function getComboGame(a){
+	if(a == 'combo_game')return
+	cstate.feed=true
+	$$("scoreboardgrid").clearAll()
+	var iparam={}
+	iparam.id=a
+	iparam.last=4
+	callApp24Sync("signUp4Event",iparam)
+	
+	var selectedGameCourse={}
+	cstate.games.events.forEach(function (event){
+		if (event.id==a) selectedGameCourse=event.courseid 
+	})
+	
+    iparam.id=selectedGameCourse	//formelly iparam.id=a 
+    cstate.currCourse=callApp24Sync("selectGolfCourse",iparam)
+    for(var digit=1;digit<=18;digit++){
+    	if(cstate.currCourse.holeinfos && cstate.currCourse.holeinfos[digit] &&
+    		cstate.currCourse.holeinfos[digit].par) cstate.parRow["hole"+digit]=cstate.currCourse.holeinfos[digit].par
+    	else cstate.parRow["hole"+digit]=4	//in future something like bestPar...?
+    }
+    cstate.parRow.id=selectedGameCourse	//formelly cstate.parRow.id=a
+    $$("scoreboardgrid2").refresh()
+    
+    checkFeeds()	
+}
+
+//#### scope for GOLF COURSES ####
+
+function scopeCourse(){
+	$$("combo_clubselection").show()		//show A 2
+	$$("hide_combo_clubselection").hide() 	//hide A H
+	$$("combo_nameselection").hide()		//hide A 1
+	
+	$$('hide_combo_type').show()			//show B H
+	$$("combo_game").hide()					//hide B 1
+	$$("combo_type").hide()					//hide B 2
+	
+	$$("hide_combo_event").show()			//show C H
+	$$("calendar").hide()					//hide C 1
+	$$('combo_event').hide()				//hide C 2
+		
+}
+
+function getComboCourse(a){
+	if (a !== "combo_clubselection"){
+	
+	$$("hide_combo_clubselection").hide() 	//hide A H
+	$$("combo_nameselection").hide()		//hide A 1
+	$$("combo_clubselection").show()		//show A 2
+
+	$$('hide_combo_type').hide()			//hide B H	
+	$$("combo_game").hide()					//hide B 1
+	$$("combo_type").show()					//show B 2
+
+	$$("hide_combo_event").hide()			//hide C H
+	$$("calendar").hide()					//hide C 1
+	$$('combo_event').show()				//show C 2
+	
+		var iparam={}
+		iparam.id=a
+		cstate.currCourse=callApp24Sync("selectGolfCourse",iparam)
+		ttt=1
+		for(var digit=1;digit<=18;digit++){
+			cstate.parRow["hole"+digit]=cstate.currCourse.holeinfos[digit].par
+		}
+		cstate.parRow.id=a
+		$$("scoreboardgrid2").refresh()
+		//here function to refresh grid data according to course and played type(flight/tournament)
+		$$("combo_type").focus()
+}}
+
+function getComboType(a){
+	
+	if (a!== "combo_type")  {
+		//$$("hide_combo_event").hide()
+		//$$("combo_event").show()
+		iparam.courseid=cstate.currCourse.id
+		//iparam.appname="gdist"
+		//2=flight,1=tournament
+		if (a=="2"){
+			iparam.type="flight"
+				cstate.gamemode="flight"
+			callApp24("getFlights",iparam,"proceeding")
+			}
+		
+		if (a=="1"){
+			iparam.type="tournament"
+				cstate.gamemode="tournament"
+				cstate.flightslist=[]	
+					$$("combo_event_list").clearAll()
+					$$("combo_event_list").parse(cstate.tournaments)
+				callApp24("getScoreCardData",iparam,"proceed")
+				}
+		
+		if (a=="3"){
+			iparam.type="single"
+				cstate.gamemode="single"
+				callApp24("getPlayers",iparam,"proceeding")	// this metod getPlayers doesn't make any sence, the answer is list of players
+				}
+		$$("combo_event").focus()
+}}
+
+function getComboEvent(a){
+	if (a!=="combo_event"){
+		fillLeaderBoard(cstate.gamemode,a)
+}}
+
+function proceeding(answer){
+	cstate.flightslist={}
+	cstate.flightslist=answer.members
+	$$("combo_event_list").clearAll()
+	$$("combo_event_list").parse(cstate.flightslist)
+}
+
+function proceed(answer){
+	cstate.gridData=answer.scores
+	cstate.feed=true
+	$$("scoreboardgrid").clearAll()
+	$$("scoreboardgrid").parse(cstate.gridData)
+		cstate.gridData.forEach(function(s){
+			computeScore(s)
+		})	
+	$$("scoreboardgrid").sort({by:'#difference#', dir: 'asc', as: 'int'})
+}
+
+/* ### pc_scoreboard ###*/
+
+/*	refactored 01.12. 2011		*/
+dhx.Type(dhx.ui.grid,{
+   name:"myScoreGridZoom",
+   height:tr25,
+ });
+
+dhx.Type(dhx.ui.grid,{
+   name:"myScoreGrid",
+   height:tr22,
+});	
+
+dhx.Type(dhx.ui.grid,{		 
+   name:"myParGrid",
+   height:tr4header,
+});	
+
+function checkFeeds(){
+	if (!cstate.feed) return
+	iparam={}
+	iparam.appname="gdist"
+	callApp24("getFeedData",iparam,"processFeed")
+	sortByScore()
+}
+
+function processFeed(response){
+	if (response.events.length<1){
+		return
+	}	
+	
+	var tout={}
+	tout.emph=1000
+	tout.sort=2000
+	
+	if (response.events.length>1){
+		tout.emph=0
+		tout.sort=0
+	}
+	
+	response.events.forEach(function (feed){
+		
+				var gele = $$("scoreboardgrid").item(feed.playerid)
+				//var gelepar = $$("scoreboardgrid2").item(feed.playerid)	//do not know yet how, but should have fill the par values of course
+				
+				if (!gele) {
+					var newitem={id:feed.playerid,gameid:feed.gameid,player:"&nbsp;&nbsp;"+cstate.playerdict[feed.playerid].value}
+					$$("scoreboardgrid").add(newitem) // //item(feed.playerid)
+					gele = $$("scoreboardgrid").item(feed.playerid)
+				}
+			
+				if (tout.emph>100) {
+					gele["hole"+feed.holenr]='<img width="70%" src="data/joingolfBall50.png" />'
+					setItemStyle({gridid: "scoreboardgrid",itemid: gele.id,style: "font-size:"+cstate.gridFontSize*1.2+"px;text-align:center;background-color: #537519; color:#FFFFFF; font-weight:bold;",member:"player"})
+					$$("scoreboardgrid").refresh()
+					$$("scoreboardgrid2").refresh()
+				}
+					// Emphasis of the current change
+								// Wait a bit and sort the grid
+								setTimeout(function (){		// this function will be
+															// triggered in 2 s
+									
+						            gele["holeV"+feed.holenr]=feed.score
+						            gele["hole"+feed.holenr]=feed.score
+						        	computeScore(gele)
+									var scolor=getScoreColors(feed.score ,cstate.parRow["hole" + feed.holenr])
+									 setItemStyle({
+						                gridid: "scoreboardgrid",
+						                itemid: gele.id,
+						                style: "font-size:"+cstate.gridFontSize*1+"px;text-align:center; font-style:italic bold;"+scolor,
+						                member: "hole" + feed.holenr
+						            				})
+									if (true || tout.emph>100){
+										$$("scoreboardgrid").sort({by:'#scoreV#', dir: 'asc', as: 'int'})
+										$$("scoreboardgrid").refresh()
+										$$("scoreboardgrid2").refresh()
+									}
+								},tout.emph)	
+		
+								// After sorting, wait a bit and turn off the emphasis
+								// of the current change
+								setTimeout(function(){		
+									if (tout.emph>100){
+										setItemStyle({gridid: "scoreboardgrid",itemid: gele.id,style: "font-size:"+cstate.gridFontSize*1+"px;text-align:left;font-weight:normal",member:"player"})	
+										$$("scoreboardgrid").refresh()
+										$$("scoreboardgrid2").refresh()
+									}
+									
+								},tout.sort)
+	})
+}
+
+
+
+function getScoreColors(sc,par){
+					if (sc-par <=-2)
+									return "background-color: #FFFF00; color:#000000; font-weight:bold"
+					if (sc-par ==-1)
+									return "background-color: #FF0000; color:#FFFFFF; font-weight:bold"
+									//"background-image: url('netmark5/images/number_bar_red.png'); color:#FFFFFF; font-weight:bold"		//RED
+					if (sc-par == 0)
+									return "background-color: #FFFFFF; color:#000000; font-weight:bold"
+					if (sc-par == 1)
+									return "background-color: #0000FF; color:#FFFFFF; font-weight:bold"
+									//"background-image: url('netmark5/images/number_bar_blue.png'); color:#FFFFFF; font-weight:bold"		//BLUE
+					if (sc-par == 2)
+									return "background-color: #8B4513; color:#FFFFFF; font-weight:bold"
+									//"background-image: url('netmark5/images/number_bar_brown.png');; color:#FFFFFF; font-weight:bold"		//BROWN
+					if (sc-par >=3)
+									return "background-color: #000000; color:#FFFFFF; font-weight:bold"
+				}
+		
+
+function computeScore(s){
+	if (s.id=="parRow") return
+	s.netto=0
+	s.difference=0
+	s.brutto=0
+	var holeinf={}
+	var result={}
+	for(var digit=1;digit<=18;digit++) {
+		if (s["hole" + digit]) {
+			if(false && cstate.currCourse.holeinfos){
+			holeinf=cstate.currCourse.holeinfos[digit]
+			result=computeScores(s["hole" + digit],holeinf,s.hcp)
+			
+			
+				if (!s["holeV" + digit]) s["holeV" + digit]=s["hole" + digit]
+			s.netto += s["holeV" + digit]
+			var tscore=s["holeV" + digit]-cstate.parRow["hole" + digit]
+				if (tcsore>0)tscore="+"+tscore
+				if (tcsore==0)tscore="par"
+			s.difference+=tscore
+			s.brutto += result.stb
+			var scolor=getScoreColors(s["holeV" + digit] ,cstate.parRow["hole" + digit])
+			setItemStyle({
+	                gridid: "scoreboardgrid",
+	                itemid: s.id,
+	                style: "text-align:center; font-style:italic bold;"+scolor,
+	                member: "hole" + digit
+	            				})
+			}
+			else{	
+						s.netto += s["holeV" + digit]
+						s.difference+=s["holeV" + digit]-cstate.parRow["hole" + digit]
+	            }
+	}   
+}
+	s.scoreV=s.difference
+	if (s.difference>0)s.difference="+"+s.difference
+	else if (s.difference==0)s.difference="par"
+}
+
+function computeScores(strokes, hole, vg){
+	var r={}
+	r.cnt=strokes-hole.par
+	if (r.cnt>1)
+		r.stb=0
+	else
+		r.stb=(r.cnt*-1)+2
+	if (vg-hole.hcp >= 0)
+		r.stb+=parseInt((vg-hole.hcp) / 18) + 1
+	return r
+}
+
+function fillLeaderBoard(mode,eventid){
+	//cstate.currCourse=clubid
+	var iparam={}
+	if (mode == "multi"){
+		cstate.gridData=callApp24Sync("getScoreCardData",iparam)//.scores
+		}
+	
+	if (mode == "single"){
+		iparam.playerid=eventid
+		iparam.type=mode
+		iparam.courseid=cstate.currCourse.id
+			cstate.gridData=callApp24Sync("getLeaderBoard",iparam)//.scores	
+		}
+	
+	if (mode == "flight"){ 
+		iparam.attendid=eventid
+		iparam.type=mode
+		cstate.gridData=callApp24Sync("getLeaderBoard",iparam)//.scores	
+	}
+	
+	cstate.feed=true
+			//cstate.currCourse//is filled just after the GolfCourse choice
+			//computeGameScore(cstate.gridData)
+	$$("scoreboardgrid").clearAll()	
+	$$("scoreboardgrid").parse(cstate.gridData.scores)	//.scores
+	cstate.gridData.scores.forEach(function(s){
+						computeScore(s)
+			})	
+	$$("scoreboardgrid").sort({by:'#difference#', dir: 'asc', as: 'int'})
+}
+
+function getCSSRule(clname){
+	var targetrule=null
+	var myrules=this.document.styleSheets[1].cssRules    //.item(".dhx_grid_row")
+	for (i=0; i<myrules.length; i++){
+		if(myrules[i].selectorText.toLowerCase().search(clname)!=-1){ //find "a:hover" rule
+		targetrule=myrules[i]
+		break;
+			}
+	}
+	return targetrule 
+}
+
+function scoreboard(){
+	cstate.parRow = {id:"parRow",position:"POS",PAR:"PAR ",hole1:null,hole2:null,hole3:null,hole4:null,hole5:null,hole6:null,hole7:null,hole8:null,hole9:null,hole10:null,
+			hole11:null,hole12:null,hole13:null,hole14:null,hole15:null,hole16:null,hole17:null,hole18:null}
+
+	iparam={}
+	iparam.appname="gdist"
+
+	cstate.gridData=[] 
+
+	fields4row=[{ width: td40, label: '', template: '<b style="font-size:70%">#position#</b>', type: 'custom', align: 'center',sort: { by: '#position#', dir: 'desc', as: 'integer'}},
+				            { width: td255, label: ui.label.gridheader.player, template: '<b style="font-size:70%">PAR:</b>', type: 'custom', align: 'right',sort: { by: '#player#', dir: 'asc', as: 'string'} }]
+					
+				for(var digit=1;digit<=18;digit++) {
+				fields4row.push({ width: td40, label: '<b><span style="text-align:center">'+digit+'</b>', template: '#hole'+digit+'#', type: 'custom', align: 'center',sort: { by: '#hole'+digit+'#', dir: 'desc', as: 'integer'}})
+			}  
+				fields4row.push({ width: td55, label: ui.label.gridheader.score, template: '#difference#', type: 'custom', align: 'center',sort: { by: '#hole'+digit+'#', dir: 'desc', as: 'integer'}},
+			   				{ width: td55, label: ui.label.gridheader.stableford, template: '#brutto#', type: 'custom', align: 'center',sort: { by: '#hole'+digit+'#', dir: 'desc', as: 'integer'}},
+							{ width: td55, label: ui.label.gridheader.netto, template: '#brutto#', type: 'custom', align: 'center',sort: { by: '#hole'+digit+'#', dir: 'asc', as: 'string'}})
+				
+				
+				
+	fields=[{ width: td40, label: 'Would not be displayer', template: '#position#', type: 'custom', align: 'center',sort: { by: '#position#', dir: 'desc', as: 'integer'}},
+				         { width: td255, label: ui.label.gridheader.player, template:  '#player#', type: 'custom', align: 'left',sort: { by: '#player#', dir: 'asc', as: 'string'} }]
+			
+					
+			
+			for(var digit=1;digit<=18;digit++) {
+				fields.push({ width: td40, label: '<b>'+digit+'</b>', template: '#hole'+digit+'#', type: 'custom', align: 'center',css:"pointerInGrid",sort: { by: '#hole'+digit+'#', dir: 'desc', as: 'int'}})
+			}       			
+			   fields.push({ width: td55, label: ui.label.gridheader.score, template: '#difference#', type: 'custom', align: 'center',sort: { by: '#hole'+digit+'#', dir: 'desc', as: 'int'}},
+			   				{ width: td55, label:"stableford", template: '#brutto#', type: 'custom', align: 'center',sort: { by: '#hole'+digit+'#', dir: 'desc', as: 'int'}},
+							{ width: td55, label: ui.label.gridheader.netto, template: '#netto#', type: 'custom', align: 'center',sort: { by: '#hole'+digit+'#', dir: 'asc', as: 'string'}})
+			
+	var targetrule=getCSSRule("dhx_grid_row")
+			if (targetrule){
+			   			cstate.gridFontSize=Math.round(window.innerWidth/100)*1.8
+			   			targetrule.style.fontSize=cstate.gridFontSize+"px"
+			   				}
+	var targetrule=getCSSRule("dhx_grid_header")	//was ist das?
+   			if (targetrule){
+   					//targetrule.style.height=50
+   				}
+			   
+	return   {view:'layout',type:'clean',rows:[		
+	                        { view: 'grid', height:(test1*8), datatype: 'json', css:"black_header",data:cstate.parRow,type:"myParGrid",//css:"black_header",height:tr4header,
+								fields: fields4row, select: false, header: true, id: 'scoreboardgrid2'
+							},
+							{ view: 'grid', datatype: 'json', data:cstate.gridData, css:"green_background",type:"myScoreGrid",
+								fields: fields, select: false, header: false, id: 'scoreboardgrid',
+							} ]}
+}
+
+function sortByScore(output){
+	var currid=$$('scoreboardgrid').first()
+	var position=0
+	while(currid){
+		position+=1
+		var currgele=$$("scoreboardgrid").item(currid)
+		if (position==1) currgele.position=null		
+		currid=$$("scoreboardgrid").next(currid)
+		
+		if (currid){
+			var nextgele=$$("scoreboardgrid").item(currid)
+			nextgele.position=null
+		}
+		
+		if (currid&&nextgele.difference==currgele.difference){
+			if (currgele.position) nextgele.position=currgele.position
+			else{
+				currgele.position="T"+position
+				nextgele.position="T"+position
+			}
+		}
+		if (!currgele.position) currgele.position=position
+
+	}
+	$$("scoreboardgrid").refresh()
+	$$("scoreboardgrid2").refresh()
+}
+
+/*	### pc_updateCourse ### */
+/*	Refactored 21.09.2011 */
+
+function makeHoleLine(a,line){
+	if (!a) return
+	 
+	else return {
+		type: 'clean',
+		cols: [{
+			view: 'label',
+			label: line,
+			popup: '',
+			click: '',
+			width: 30,
+			 
+		}, {
+			view: 'text',
+			name: '',
+			label: '',
+			value:a.holeinfos[line].par,id:'par'+line,
+			width: 65,
+			labelWidth: 0,
+			 
+		}, {
+			view: 'text',
+			name: '',
+			label: '',
+			value:a.holeinfos[line].hcp,id:'hcp'+line,
+			width: 65,
+			labelWidth: 0,
+			 
+		}, {
+			view: 'text',
+			name: '',
+			label: '',
+			value:a.holeinfos[line].men,id:'men'+line,
+			labelWidth: 0,
+			inputAlign: 'center',
+			 
+		}, {
+			view: 'text',
+			name: '',
+			label: '',
+			value:a.holeinfos[line].women,id:'women'+line,
+			inputAlign: 'center',
+			labelWidth: 0,
+			 
+		}, {
+			view: 'button',
+			label: ui.label.button.tee,
+			width: 80,
+			popup: '',id:'tee'+line,
+			click: 'recalibTee('+line+')',
+			css: '',
+			 
+		}, {
+			view: 'button',
+			label: ui.label.button.green,
+			width: 80,
+			popup: '',id:'green'+line,
+			click: 'recalibGreen('+line+')',
+			css: '',
+			 
+		}]
+	}
+}
+
+function editCourseWindow(a){	
+	var isEditOrCreateLabel={}
+	var isEditOrCreateButton={}
+	if (!a.id)  {
+		isEditOrCreateLabel="Create new Golf Course"
+		isEditOrCreateButton=ui.label.button.create+"..."
+	} else {
+		isEditOrCreateLabel="Edit the golf course"
+		isEditOrCreateButton=ui.label.button.edit+"..."
+		}
+
+		var mainbar={view: 'toolbar',type: 'MainBar',elements: [{ view: 'label', label: isEditOrCreateLabel, id: 'createlabel'},],id: 'form_toolbar'}
+		var headernameadress={
+						view: 'layout',
+						type: 'clean',
+						id: 'layout_4',
+						cols: [{
+								view: 'text',label: ui.label.text.coursename,value: a.name,
+								labelWidth: 130,labelPosition: 'left',labelAlign: 'left',
+								id: 'coursename'
+							},{
+								view: 'text',label: ui.label.text.courseadress,value: a.adress,
+								labelWidth: 130,labelPosition: 'left',labelAlign: 'left',
+								id: 'courseadress'
+								}
+							]
+					}
+				
+		var formheaderleft = {
+						view: 'layout',
+						type: 'clean',
+						cols: [{view: 'label',label: ui.label.formheader.label.hole,width: 30,align: 'left'},
+						       {view: 'label',label: ui.label.formheader.label.par,width: 65,align: 'center'},
+						       {view: 'label',label: ui.label.formheader.label.hcp,width: 65,align: 'center'},
+						       {view: 'label',label: ui.label.formheader.label.men,align: 'center'}, 
+						       {view: 'label',label: ui.label.formheader.label.women,align: 'center'}, 
+						       {view: 'label',label: ui.label.formheader.label.tee,width: 80,align: 'center'},
+						       {view: 'label',label: ui.label.formheader.label.green,width: 80,align: 'center'}
+						      ]
+					}
+				
+		var formheaderright = {
+						view: 'layout',
+						type: 'clean',
+						cols: [{view: 'label',label: ui.label.formheader.label.hole,width: 30,align: 'left'}, 
+						       {view: 'label',label: ui.label.formheader.label.par,width: 65,align: 'center'},
+						       {view: 'label',label: ui.label.formheader.label.hcp,width: 65,align: 'center'},
+						       {view: 'label',label: ui.label.formheader.label.men,align: 'center'}, 
+						       {view: 'label',label: ui.label.formheader.label.women,align: 'center'},
+						       {view: 'label',label: ui.label.formheader.label.tee,width: 80,align: 'center'}, 
+						       {view: 'label',label: ui.label.formheader.label.green,width: 80,align: 'center'}
+						      ]
+					}
+	
+
+	return {
+		view: 'layout',
+		rows: [mainbar,{
+			view: 'layout',
+			type: 'line',
+			rows: [headernameadress, {
+				view: 'layout',
+				type: 'line',
+				id: 'layoutToPush',
+				cols: [{
+					view: 'form',
+					scroll: true,
+					elements: [formheaderleft, makeHoleLine(a,1), makeHoleLine(a,2), makeHoleLine(a,3), makeHoleLine(a,4), makeHoleLine(a,5),
+					           makeHoleLine(a,6), makeHoleLine(a,7), makeHoleLine(a,8), makeHoleLine(a,9), ],
+					id: 'form1to9'
+				}, {
+					view: 'form',
+					scroll: true,
+					elements: [formheaderright, makeHoleLine(a,10), makeHoleLine(a,11), makeHoleLine(a,12), makeHoleLine(a,13), makeHoleLine(a,14),
+					           makeHoleLine(a,15), makeHoleLine(a,16), makeHoleLine(a,17), makeHoleLine(a,18), ],
+					id: 'form10to18'
+				}]
+			}, {
+				view: 'button',
+				label: isEditOrCreateButton,
+				type: 'form',
+				popup: '',
+				inputAlign: 'center',
+				click: 'storeCourse',
+				css: '',
+				id: 'control_button_2'
+			}],
+			id: 'layout_2'
+		}]
+	}
+}
+
+	
+function recalibGreen(a){
+	recalibGeo("Green",a)
+}
+
+function recalibTee(a){
+	recalibGeo("Tee",a)
+}
+
+function recalibGeo(gtype,a){
+			var somestuff = new FormWindow("pushGeo"+gtype, {
+                headerlabel: ui.label.formheader.headerlabel.newgeofor+gtype+" "+a,
+                left: 10,
+                height: 172,
+				width:500,
+				okbutton:true
+            })
+	var conditionLong={}
+	var conditionLati={}
+	gtstr=gtype.toLowerCase()
+		if (!cstate.currCourse.holeinfos[a].geo) cstate.currCourse.holeinfos[a].geo={}
+		if (!cstate.currCourse.holeinfos[a].geo[gtstr]){conditionLong=""}else {conditionLong=cstate.currCourse.holeinfos[a].geo[gtstr].lng}
+		if (!cstate.currCourse.holeinfos[a].geo[gtstr]){conditionLati=""}else {conditionLati=cstate.currCourse.holeinfos[a].geo[gtstr].lat}
+	somestuff.setLabelWidth(100)
+	somestuff.addText(ui.label.formheader.label.longitude,{value:conditionLong,labelAlign:'left'})
+	somestuff.addText(ui.label.formheader.label.latitude,{value:conditionLati,labelAlign:'left'})
+	somestuff.addText("driveinfo",{value:a,labelAlign:'left'})
+	somestuff.show()
+}
+
+function pushGeoGreen(a){
+			if (!cstate.create.course.holeinfos[a.driveinfo]) cstate.create.course.holeinfos[a.driveinfo]={}
+			if (!cstate.create.course.holeinfos[a.driveinfo].geo) cstate.create.course.holeinfos[a.driveinfo].geo={}
+			if (!cstate.create.course.holeinfos[a.driveinfo].geo.green) cstate.create.course.holeinfos[a.driveinfo].geo.green={}
+	cstate.create.course.holeinfos[a.driveinfo].geo.green.lat=a.Latitude
+	cstate.create.course.holeinfos[a.driveinfo].geo.green.lng=a.Longitude
+}
+
+function pushGeoTee(a){
+			if (!cstate.create.course.holeinfos[a.driveinfo]) cstate.create.course.holeinfos[a.driveinfo]={}
+			if (!cstate.create.course.holeinfos[a.driveinfo].geo) cstate.create.course.holeinfos[a.driveinfo].geo={}
+			if (!cstate.create.course.holeinfos[a.driveinfo].geo.tee) cstate.create.course.holeinfos[a.driveinfo].geo.tee={}
+	cstate.create.course.holeinfos[a.driveinfo].geo.tee.lat=a.Latitude
+	cstate.create.course.holeinfos[a.driveinfo].geo.tee.lng=a.Longitude
+}
+
+function storeCourse(){
+				cstate.create.course=cstate.currCourse
+				cstate.create.course.name=$$("coursename").getValue()
+				cstate.create.course.adress=$$("courseadress").getValue()
+			for(var hnr=1;hnr<=18;hnr++)
+			{
+				if (!cstate.create.course.holeinfos[hnr]) cstate.create.course.holeinfos[hnr]={}
+				cstate.create.course.holeinfos[hnr].par=$$("par"+hnr).getValue()
+				cstate.create.course.holeinfos[hnr].hcp=$$("hcp"+hnr).getValue()
+				cstate.create.course.holeinfos[hnr].men=$$("men"+hnr).getValue()
+				cstate.create.course.holeinfos[hnr].women=$$("women"+hnr).getValue()
+			}
+		callApp24("storeGolfCourse",cstate.create.course,"commitStoreCourse")
+		cstate.courseForm.hide()
+}
+
+function commitStoreCourse(){
+	courseScreen()
+}
+
+function pushGeoGreen(a){
+			if (!cstate.create.course.holeinfos[a.driveinfo]) cstate.create.course.holeinfos[a.driveinfo]={}
+			if (!cstate.create.course.holeinfos[a.driveinfo].geo) cstate.create.course.holeinfos[a.driveinfo].geo={}
+			if (!cstate.create.course.holeinfos[a.driveinfo].geo.green) cstate.create.course.holeinfos[a.driveinfo].geo.green={}
+	cstate.create.course.holeinfos[a.driveinfo].geo.green.lat=a.Latitude
+	cstate.create.course.holeinfos[a.driveinfo].geo.green.lng=a.Longitude
+}
+
+function pushGeoTee(a){
+			if (!cstate.create.course.holeinfos[a.driveinfo]) cstate.create.course.holeinfos[a.driveinfo]={}
+			if (!cstate.create.course.holeinfos[a.driveinfo].geo) cstate.create.course.holeinfos[a.driveinfo].geo={}
+			if (!cstate.create.course.holeinfos[a.driveinfo].geo.tee) cstate.create.course.holeinfos[a.driveinfo].geo.tee={}
+	cstate.create.course.holeinfos[a.driveinfo].geo.tee.lat=a.Latitude
+	cstate.create.course.holeinfos[a.driveinfo].geo.tee.lng=a.Longitude
+}
+
+/* ### pc_geplugin ### */
+function failureCallback(errorCode) {
+}
+
+google.load("earth", "1");
+
+
+cstate.playing=false
+
+function TourWindow(kml, props) {
+	var mself = this
+	this.isApp24UI = true
+	this.mw = new GenWindow({ //'<div id="map3d" style="width:100%;height:100%;"></div>'	
+		template : '<div id="map3d" style="width:100%;height:100%;"></div>' //'<div id="map3d"></div>'
+	}, props)
+
+	this.mw.show()
+  	//google.earth.createInstance('map3d', this.play, failureCallback);
+
+	this.hide = function(instance) {
+		this.mw.hide()
+	}
+	this.show = function(instance) {
+		this.mw.show()
+	}
+	this.play = function(instance) {
+		  cstate.ge = instance;
+		  cstate.ge.getWindow().setVisibility(true);
+		  playKML(mykml)
+	}
+	
+	
+}
+
+function initGEPlugin(){
+	if (cstate.twin){
+		//cstate.twin.show()
+		//$$(cstate.twin.ds.id).setPosition(10,10)
+		
+		$$(cstate.twin.ds.id).show()
+		//resizeWindow(800,600)
+		
+		//cstate.twin=new TourWindow()
+	  	//google.earth.createInstance('map3d', initCallback, failureCallback);
+		initCallback(cstate.ge)
+	} else {
+		
+		var toppi=0.118
+		cstate.twin=new GenWindow({template : '<div id="map3d" style="width:100%;height:100%;"></div>'	},
+				//{top:(window.innerHeight*0.16),left:0,height:(window.innerHeight*0.835), width:(window.innerWidth*0.999), modal : false})
+				{top:(window.innerHeight*toppi),left:0,height:(window.innerHeight*(1-toppi-0.002)), width:(window.innerWidth*0.999), modal : false})
+		cstate.twin.show()
+		//new TourWindow()
+	  	google.earth.createInstance('map3d', initCallback, failureCallback);
+	}
+}
+
+function checkPlay(){
+		var dur=cstate.tourPlayer.getDuration()
+		var curr=cstate.tourPlayer.getCurrentTime()
+		//alert(dur+" "+curr)
+		if (curr>=dur){
+			//alert("endofplay")
+			//cstate.ge.getWindow().setVisibility(false);
+			
+			//cstate.tourPlayer.setTour(null)
+			//cstate.twin.hide()
+			//playKML(mykml)
+			clearInterval(cstate.getimerID)
+			//cstate.twin.hide()
+			
+			if (false) {  // bounds switched off
+				var folder = cstate.gex.dom.addFolder([
+				  cstate.gex.dom.buildPointPlacemark([cstate.bounds[0].lat, cstate.bounds[0].lng]),
+				  cstate.gex.dom.buildPointPlacemark([cstate.bounds[1].lat, cstate.bounds[1].lng]),
+				]);
+				
+				var bounds = cstate.gex.dom.computeBounds(folder);
+				cstate.gex.view.setToBoundsView(bounds, { aspectRatio: 1.0 });
+				//cstate.gex.util.flyToObject(folder);
+			}
+			//setTimeout("$$(cstate.twin.ds.id).setPosition(5000,5000)",5000)
+			setTimeout("hideMe()",4000)
+		}
+}
+
+function hideMe(){
+	$$(cstate.twin.ds.id).hide()
+	document.getElementById('header_leaderboard').innerHTML="Leaderboard"
+		document.getElementById('header_hole_info').innerHTML="&nbsp;"
+}
+
+function resizeWindow(w,h){
+	$$(cstate.twin.ds.id).hide()
+	//$$(cstate.twin.ds.id).define("hidden",true)
+	$$(cstate.twin.ds.id).refresh()
+	/*$$(cstate.twin.ds.id).define("width",w)
+	$$(cstate.twin.ds.id).define("height",h)
+	$$(cstate.twin.ds.id).resize(true)*/
+}
+
+function playKML(kml){
+  var gex=cstate.gex
+  
+  gex.dom.clearFeatures();
+	var numLines = 0;
+	      var fetchedKml = cstate.ge.parseKml(kml)
+               // Add the fetched KML into this Earth instance.
+               cstate.ge.getFeatures().appendChild(fetchedKml);
+
+		gex.dom.walk({
+		  rootObject: fetchedKml,
+		  visitCallback: function() {
+				    if ('getType' in this){
+				    	var nt=    this.getType() 
+				    	if (nt=="KmlTour")
+				    	 	cstate.tour=this
+				    	}
+		}});
+
+	cstate.tourPlayer=cstate.ge.getTourPlayer()
+		if (false && cstate.tourPlayer){
+			var msec=cstate.tourPlayer.getDuration()
+			var msec=cstate.tourPlayer.getCurrentTime()
+	}
+
+            cstate.tourPlayer.setTour(cstate.tour);
+            cstate.tourPlayer.play();
+			cstate.playing=true
+			cstate.getimerID=setInterval("checkPlay()",1000)
+}
+
+function initCallback(instance) {
+  cstate.ge = instance;
+  cstate.ge.getWindow().setVisibility(true);
+  cstate.gex= new GEarthExtensions(cstate.ge);
+
+	playKML(cstate.kml)
+
+return
+
+
+
+var folder = gex.dom.addFolder([
+  gex.dom.buildPointPlacemark([mpoint.lat, mpoint.lng]),
+// gex.dom.buildPointPlacemark([40, -79]),
+// gex.dom.buildPointPlacemark([25, -80])
+]);
+
+// var bounds = gex.dom.computeBounds(folder);
+// gex.view.setToBoundsView(bounds, { aspectRatio: 1.0 });
+gex.util.flyToObject(folder);
+alert("wait")
+// You could also use gex.util.flyToObject(folder);
+  
+
+gex.util.flyToObject(gex.dom.buildPointPlacemark([mpoint.lat, mpoint.lng+0.02]));
+  
+  // gex.dom.addPointPlacemark(gex.util.getLookAt(), { name: 'Hello World!'
+	// });
+
+return
+
+  // Create the placemark and add it to Earth.
+  placemark = cstate.ge.createPlacemark('');
+  var point = cstate.ge.createPoint('');
+  point.setLatitude(mpoint.lat);
+  point.setLongitude(mpoint.lng);
+  placemark.setGeometry(point);
+  // placemark.setName('Position');
+  cstate.ge.getFeatures().appendChild(placemark);
+
+// Create a new LookAt
+var lookAt = cstate.ge.createLookAt('');
+
+// Set the position values
+lookAt.setLatitude(mpoint.lat);
+lookAt.setLongitude(mpoint.lng);
+lookAt.setRange(80.0); // default is 0.0
+lookAt.setTilt(60.0); // default is 0.0
+lookAt.setHeading(0); // default is 0.0
+
+// Update the view in Google Earth
+cstate.ge.getView().setAbstractView(lookAt);
+
+// Set the FlyTo speed
+cstate.ge.getOptions().setFlyToSpeed(0.1);  
+lookAt.setLongitude(mpoint.lng+0.002);
+
+// Update the view in Google Earth
+cstate.ge.getView().setAbstractView(lookAt);
+ 
+}
